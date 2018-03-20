@@ -38,7 +38,16 @@
         query = query.Substring(5);
         try
         {
-          return (database.SelectItems(query) ?? new Item[0]);
+          #region Modified code
+          //original :return (database.SelectItems(query) ?? new Item[0]);
+          Item[] items = database.SelectItems(query);
+
+          for (int i = 0; i < items.Length; i++)
+            if (items[i].Versions.Count == 0 && items[i].LanguageFallbackEnabled)
+              items[i] = items[i].GetFallbackItem();
+
+          return items ?? new Item[0];
+          #endregion
         }
         catch
         {
