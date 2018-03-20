@@ -1,4 +1,5 @@
-﻿namespace Sitecore.Support.ItemWebApi.Pipelines.Request
+﻿
+namespace Sitecore.Support.ItemWebApi.Pipelines.Request
 {
   using Sitecore.Data;
   using Sitecore.Data.Items;
@@ -9,9 +10,15 @@
   using Sitecore.ItemWebApi.Pipelines.Request;
   using Sitecore.Web;
   using System;
+  using System.Reflection;
 
   public class ResolveItems : RequestProcessor
   {
+    private static ConstructorInfo BadRequestExceptionConstructor;
+    static ResolveItems()
+    {
+      BadRequestExceptionConstructor = Type.GetType("Sitecore.ItemWebApi.BadRequestException, Sitecore.ItemWebApi", false, false).GetConstructor(new[] { typeof(string) });
+    }
     private static Item[] GetItems(RequestArgs arguments)
     {
       Item[] itemArray;
@@ -38,8 +45,7 @@
         query = query.Substring(5);
         try
         {
-          #region Modified code
-          //original :return (database.SelectItems(query) ?? new Item[0]);
+          #region Modified code 
           Item[] items = database.SelectItems(query);
 
           for (int i = 0; i < items.Length; i++)
@@ -51,7 +57,7 @@
         }
         catch
         {
-          throw new BadRequestException($"Bad Sitecore fast query: ({query}).");
+          throw BadRequestExceptionConstructor.Invoke(new object[] { $"Bad Sitecore fast query: ({query})." }) as Exception;
         }
       }
       if (item == null)
@@ -65,7 +71,7 @@
       }
       catch
       {
-        throw new BadRequestException($"Bad Sitecore query ({query}).");
+        throw BadRequestExceptionConstructor.Invoke(new object[] { $"Bad Sitecore query ({query})." }) as Exception;
       }
       return itemArray;
     }
